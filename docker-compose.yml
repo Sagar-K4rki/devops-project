@@ -1,0 +1,54 @@
+services:
+
+  # ─── PostgreSQL ───────────────────────────────────────────
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: weatherapp
+    ports:
+      - "5433:5432"       # 5433 on host to avoid clash with DE project
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      retries: 5
+
+  # ─── Your App ─────────────────────────────────────────────
+  app:
+    build: .              # build from the Dockerfile in current directory
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: postgres   # 'postgres' is the service name above — Docker resolves it
+      DB_PORT: 5432
+      DB_NAME: weatherapp
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+
+  # ─── Prometheus ───────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: always
+
+  # ─── Grafana ──────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"       # 3001 on host to avoid clash with Metabase
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    restart: always
+
+volumes:
+  postgres_data:
