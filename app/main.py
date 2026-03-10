@@ -5,9 +5,6 @@ import time
 import os
 from app.database import get_connection, init_db
 
-# ── App Setup ────────────────────────────────────────────────
-app = FastAPI(title="DevOps Demo App")
-
 # ── Prometheus Metrics ───────────────────────────────────────
 # These are counters and histograms that track what your app is doing.
 # Prometheus will scrape these numbers every 15 seconds.
@@ -31,12 +28,15 @@ DB_QUERY_COUNT = Counter(
 )
 
 # ── Startup Event ────────────────────────────────────────────
-@app.on_event("startup")
-def startup_event():
-    """Runs once when the app starts — initializes the database."""
-    # Only connect to DB if not in test mode
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     if os.getenv("TESTING") != "true":
         init_db()
+    yield
+
+app = FastAPI(title="DevOps Demo App", lifespan=lifespan)
 
 # ── Middleware — tracks every request ───────────────────────
 @app.middleware("http")

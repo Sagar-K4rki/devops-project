@@ -28,8 +28,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest httpx
-
+          pip install pytest httpx==0.24.1
+          
       # Step 4 — Run your tests
       # If any test fails, the pipeline stops here — nothing gets deployed
       - name: Run tests
